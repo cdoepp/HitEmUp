@@ -28,6 +28,7 @@ import cdoepp.hitemup.Person;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.Contacts;
 import android.widget.AdapterView;
+import android.widget.CursorAdapter;
 import android.widget.ListView;
 
 import java.util.List;
@@ -39,7 +40,6 @@ public class PeopleListFragment extends Fragment implements
 
     private static final String TAG = "PeopleList";
     private static final String ARG_COLUMN_COUNT = "column-count";
-    // TODO: Customize parameters
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
 
@@ -54,7 +54,9 @@ public class PeopleListFragment extends Fragment implements
 
     @SuppressLint("InlinedApi")
     private static final String[] PROJECTION = {
-            Contacts.DISPLAY_NAME_PRIMARY
+            "_id",
+            Contacts.DISPLAY_NAME_PRIMARY,
+            Contacts.PHOTO_THUMBNAIL_URI
     };
 
     // The column index for the _ID column
@@ -78,7 +80,7 @@ public class PeopleListFragment extends Fragment implements
      * the Android framework, so it is prefaced with "android.R.id"
      */
     private final static int[] TO_IDS = {
-            R.id.id
+            R.id.name
     };
     // Define global mutable variables
     // Define a ListView object
@@ -91,7 +93,7 @@ public class PeopleListFragment extends Fragment implements
     // A content URI for the selected contact
     Uri mContactUri;
     // An adapter that binds the result Cursor to the ListView
-    private SimpleCursorAdapter mCursorAdapter;
+    private CursorAdapter mCursorAdapter;
 
 
 
@@ -147,13 +149,7 @@ public class PeopleListFragment extends Fragment implements
         super.onActivityCreated(savedInstanceState);
 
         // Gets a CursorAdapter
-        mCursorAdapter = new SimpleCursorAdapter(
-                getActivity(),
-                R.layout.fragment_person,
-                null,
-                FROM_COLUMNS, TO_IDS,
-                0);
-
+        mCursorAdapter = new ContactsCursorAdapter(getActivity(), null);
 
         // Sets the adapter for the ListView
         mContactsList.setAdapter(mCursorAdapter);
@@ -171,7 +167,7 @@ public class PeopleListFragment extends Fragment implements
         Log.d(TAG, "item clicked");
 
         // Get the Cursor
-        Cursor cursor = ((SimpleCursorAdapter) parent.getAdapter()).getCursor();
+        Cursor cursor = ((CursorAdapter) parent.getAdapter()).getCursor();
         // Move to the selected contact
         cursor.moveToPosition(position);
         // Get the _ID value
@@ -205,9 +201,9 @@ public class PeopleListFragment extends Fragment implements
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         Log.d(TAG, "onLoadFinished");
+        Log.d(TAG, "" + DatabaseUtils.dumpCursorToString(data));
         // Put the result Cursor in the adapter for the ListView
         mCursorAdapter.swapCursor(data);
-        Log.d(TAG, "" + DatabaseUtils.dumpCursorToString(data));
     }
 
     @Override
