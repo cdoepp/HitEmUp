@@ -2,6 +2,7 @@ package cdoepp.hitemup;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.net.Uri;
@@ -128,19 +129,7 @@ public class PeopleListFragment extends Fragment implements
         View view = inflater.inflate(R.layout.fragment_person_list, container, false);
 
         mContactsList = (ListView) view.findViewById(R.id.list);
-        // Set the adapter
-        /*
-        if (view instanceof RecyclerView) {
-            Context context = view.getContext();
-            RecyclerView recyclerView = (RecyclerView) view;
-            if (mColumnCount <= 1) {
-                recyclerView.setLayoutManager(new LinearLayoutManager(context));
-            } else {
-                recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
-            }
-            recyclerView.setAdapter(new PersonRecyclerViewAdapter(DummyContent.ITEMS, mListener));
-        }
-        */
+
         return view;
     }
 
@@ -148,37 +137,12 @@ public class PeopleListFragment extends Fragment implements
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        // Gets a CursorAdapter
         mCursorAdapter = new ContactsCursorAdapter(getActivity(), null);
-
-        // Sets the adapter for the ListView
         mContactsList.setAdapter(mCursorAdapter);
-
-        // Set the item click listener to be the current fragment.
         mContactsList.setOnItemClickListener(this);
 
         // Initializes the loader
         getLoaderManager().initLoader(0, null, this);
-
-    }
-
-    @Override
-    public void onItemClick(AdapterView<?> parent, View item, int position, long rowID) {
-        Log.d(TAG, "item clicked");
-
-        // Get the Cursor
-        Cursor cursor = ((CursorAdapter) parent.getAdapter()).getCursor();
-        // Move to the selected contact
-        cursor.moveToPosition(position);
-        // Get the _ID value
-        mContactId = cursor.getLong(CONTACT_ID_INDEX);
-        // Get the selected LOOKUP KEY
-        mContactKey = cursor.getString(LOOKUP_KEY_INDEX);
-        // Create the contact's content Uri
-        mContactUri = Contacts.getLookupUri(mContactId, mContactKey);
-
-        //You can use mContactUri as the content URI for retrieving the details for a contact.
-
     }
 
     @Override
@@ -213,6 +177,28 @@ public class PeopleListFragment extends Fragment implements
         mCursorAdapter.swapCursor(null);
     }
 
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View item, int position, long rowID) {
+        Log.d(TAG, "item clicked");
+
+        // Get the Cursor
+        Cursor cursor = ((CursorAdapter) parent.getAdapter()).getCursor();
+        // Move to the selected contact
+        cursor.moveToPosition(position);
+        // Get the _ID value
+        mContactId = cursor.getLong(CONTACT_ID_INDEX);
+        // Get the selected LOOKUP KEY
+        mContactKey = cursor.getString(LOOKUP_KEY_INDEX);
+        // Create the contact's content Uri
+        mContactUri = Contacts.getLookupUri(mContactId, mContactKey);
+
+        //You can use mContactUri as the content URI for retrieving the details for a contact.
+
+        Intent intent = new Intent(getActivity(), PersonDetailsActivity.class);
+        startActivity(intent);
+
+    }
 
 
     @Override
