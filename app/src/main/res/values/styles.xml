@@ -17,4 +17,23 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="YTWTheme" parent="Theme.AppCompat.Light.NoActionBar" >
+        <item name="colorPrimary">@color/ytw_blue</item>
+        <item name="colorPrimaryDark">@color/ytw_dark_blue</item>
+        <item name="colorAccent">@color/ytw_orange</item>
+    </style>
+
+    <style name="YTWThemeNoActionBar" parent="Theme.AppCompat.Light.NoActionBar" >
+        <item name="colorPrimary">@color/ytw_blue</item>
+        <item name="colorPrimaryDark">@color/ytw_dark_blue</item>
+        <item name="colorAccent">@color/ytw_orange</item>
+
+    </style>
+
+    <style name="ToolbarTheme">
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:textColorSecondary">@android:color/white</item>
+        <item name="actionMenuTextColor">@android:color/white</item>
+    </style>
+
 </resources>

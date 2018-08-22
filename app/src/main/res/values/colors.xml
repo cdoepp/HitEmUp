@@ -9,4 +9,9 @@
     <color name="gray">#ff888888</color>
     <color name="blue">#0000ff</color>
 
+
+    <color name="ytw_blue">#00b2ff</color>
+    <color name="ytw_dark_blue">#008ac6</color>
+    <color name="ytw_orange">#f08080</color>
+
 </resources>

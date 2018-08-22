@@ -1,79 +1,107 @@
 package cdoepp.hitemup;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.DatabaseUtils;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
+import android.provider.ContactsContract.Data;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.support.design.widget.AppBarLayout;
-import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.graphics.Palette;
 import android.support.v7.widget.Toolbar;
-import android.view.Display;
-import android.view.View;
-import android.widget.ImageView;
+import android.util.Log;
+import android.widget.QuickContactBadge;
+
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
+import android.support.v4.widget.CursorAdapter;
+import android.widget.TextView;
 
 
+public class PersonDetailsActivity extends AppCompatActivity implements
+        LoaderManager.LoaderCallbacks<Cursor> {
 
-public class PersonDetailsActivity extends AppCompatActivity {
-
+    private static final String TAG = "PersonDetailsActivity";
     private AppBarLayout appBarLayout;
     private CoordinatorLayout coordinatorLayout;
+    private Uri contactUri;
+    private String lookupKey;
+    private long contactId;
+    private QuickContactBadge contactBadge;
+
+    private String name;
+    private String phoneNumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_person_details);
-        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        //setSupportActionBar(toolbar);
 
+        Intent intent = getIntent();
+        contactUri = (Uri) intent.getParcelableExtra(MainActivity.CONTACT_URI);
+        lookupKey = intent.getStringExtra(MainActivity.LOOKUP_KEY);
+        String phoneNumber = intent.getStringExtra(MainActivity.PHONE_NUMBER);
+        String name = intent.getStringExtra(MainActivity.NAME);
+        String photoString = intent.getStringExtra(MainActivity.PHOTO_URI);
+
+        Log.d(TAG, "uri = " + contactUri.toString());
+        Log.d(TAG, "lookup key = " + lookupKey);
+
+        contactBadge = findViewById(R.id.contact_badge);
+        contactBadge.assignContactFromPhone(phoneNumber, true);
+        contactBadge.setImageURI(null);
+        if (photoString != null) {
+            Uri photoUri = Uri.parse(photoString);
+            contactBadge.setImageURI(photoUri);
+        } else {
+            contactBadge.setImageDrawable(getDrawable(R.drawable.ic_person_black_24dp));
+        }
+
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("Name");
+        getSupportActionBar().setTitle(name);
 
-        /*
-        final Display dWidth = getWindowManager().getDefaultDisplay();
-        coordinatorLayout = (CoordinatorLayout) findViewById(R.id.cordinator_layout);
-        appBarLayout = (AppBarLayout) findViewById(R.id.appbar_layout);
-        appBarLayout.post(new Runnable() {
-            @Override
-            public void run() {
-                int heightPx = dWidth.getWidth() * 1 / 3;
-                setAppBarOffset(heightPx);
-            }
-        });
-        final CollapsingToolbarLayout collapsingToolbarLayout = (CollapsingToolbarLayout) findViewById(R.id.collapse_toolbar);
-        ImageView toolbarImage = (ImageView) findViewById(R.id.toolbar_image);
-        toolbarImage.getLayoutParams().height = dWidth.getWidth();
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(),
-                R.drawable.ic_launcher_background);
+        TextView tvName = findViewById(R.id.name);
+        tvName.setText(name);
+        TextView tvPhoneNumber = findViewById(R.id.phone_number);
+        tvPhoneNumber.setText(phoneNumber);
+        TextView tvDetails1 = findViewById(R.id.details_text1);
+        tvDetails1.setText("Id = " + intent.getLongExtra(MainActivity.CONTACT_ID, 0));
 
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-        */
+        // Initializes the loader framework
+        getSupportLoaderManager().initLoader(0, null, this);
+
     }
 
-    private void setAppBarOffset(int offsetPx) {
-        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams();
-        AppBarLayout.Behavior behavior = (AppBarLayout.Behavior) params.getBehavior();
-        behavior.onNestedPreScroll(coordinatorLayout, appBarLayout, null, 0, offsetPx, new int[]{0, 0});
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        return null;
     }
-        /*
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-        */
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+
+    }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        onBackPressed();
+        Log.d(TAG, "onSupportNavigateUp");
+        return true;
+    }
 }

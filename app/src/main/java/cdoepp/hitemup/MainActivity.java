@@ -19,11 +19,17 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import cdoepp.hitemup.dummy.DummyContent;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         PeopleListFragment.OnListFragmentInteractionListener {
+
+    public static final String CONTACT_URI = "CONTACT_URI";
+    public static final String LOOKUP_KEY = "LOOKUP_KEY";
+    public static final String CONTACT_ID = "CONTACT_ID";
+    public static final String PHONE_NUMBER = "PHONE_NUMBER";
+    public static final String NAME = "NAME";
+    public static final String PHOTO_URI = "PHOTO_URI";
 
     private static final String TAG = "MainActivity";
     private static final int MY_PERMISSIONS_REQUEST_READ_CONTACTS = 99;
@@ -140,8 +146,4 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    @Override
-    public void onListFragmentInteraction(DummyContent.DummyItem item) {
-        Log.d(TAG, "List Fragment Interaction");
-    }
 }

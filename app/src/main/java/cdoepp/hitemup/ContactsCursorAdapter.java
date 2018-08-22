@@ -1,5 +1,6 @@
 package cdoepp.hitemup;
 
+import android.arch.persistence.room.Room;
 import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
@@ -19,7 +20,10 @@ import android.widget.TextView;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.HashMap;
 
+import cdoepp.hitemup.Database.AppDatabase;
+import cdoepp.hitemup.Database.Person;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 /**
@@ -29,6 +33,8 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class ContactsCursorAdapter extends CursorAdapter {
     private static final String TAG = "ContactsCursorAdapter";
     private Context context;
+
+    private HashMap<Long, Person> peopleMap;
 
     public ContactsCursorAdapter(Context context, Cursor cursor) {
         super(context, cursor, 0);
@@ -49,10 +55,12 @@ public class ContactsCursorAdapter extends CursorAdapter {
         // Find fields to populate in inflated template
         TextView tvName = view.findViewById(R.id.name);
         CircleImageView ivPhoto = view.findViewById(R.id.photo);
+        TextView tvLevel = view.findViewById(R.id.level);
 
-        // Extract properties from cursor
+        Long id = cursor.getLong(0);
         String name = cursor.getString(cursor.getColumnIndexOrThrow(Contacts.DISPLAY_NAME_PRIMARY));
         String photoString = cursor.getString(cursor.getColumnIndexOrThrow(Contacts.PHOTO_THUMBNAIL_URI));
+        int level = -1;
 
         ivPhoto.setImageURI(null);
         if (photoString != null) {
@@ -61,6 +69,16 @@ public class ContactsCursorAdapter extends CursorAdapter {
         } else {
             ivPhoto.setImageDrawable(context.getDrawable(R.drawable.ic_person_black_24dp));
         }
+        if (peopleMap != null) {
+            Person person = peopleMap.get(id);
+            if (person != null) {
+                level = person.getLevel();
+                tvLevel.setText("" + level);
+            }
+        }
+        if (level == -1) {
+            tvLevel.setText("?");
+        }
 
         //Log.d(TAG, "photo uri = " + photoUri);
 
@@ -68,25 +86,10 @@ public class ContactsCursorAdapter extends CursorAdapter {
         tvName.setText(name);
     }
 
-    private InputStream openPhoto(Uri photoUri, Context context) {
-        //Uri contactUri = ContentUris.withAppendedId(Contacts.CONTENT_URI);
-        //Uri photoUri = Uri.withAppendedPath(contactUri, Contacts.Photo.CONTENT_DIRECTORY);
-        Cursor cursor = context.getContentResolver().query(photoUri,
-                new String[] {Contacts.Photo.PHOTO}, null, null, null);
-        if (cursor == null) {
-            return null;
-        }
-        try {
-            if (cursor.moveToFirst()) {
-                byte[] data = cursor.getBlob(0);
-                if (data != null) {
-                    return new ByteArrayInputStream(data);
-                }
-            }
-        } finally {
-            cursor.close();
-        }
-        return null;
+
+    public Cursor swapCursor(Cursor newCursor, HashMap<Long, Person> peopleMap) {
+        this.peopleMap = peopleMap;
+        return super.swapCursor(newCursor);
     }
 
 }
