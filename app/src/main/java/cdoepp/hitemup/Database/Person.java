@@ -22,13 +22,21 @@ public class Person {
     @ColumnInfo(name = "level")
     private int level;
 
+    @ColumnInfo(name = "photo")
+    private String photo;
+
+    public Person(long id, String name, String phoneNumber, String photo, int level) {
+        this.id = id;
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.photo = photo;
+        this.level = level;
+    }
 
     public long getId() {
         return id;
     }
-    public void setId(long id) {
-        this.id = id;
-    }
+    public void setId(long id) { this.id = id; }
     public String getName() {
         return name;
     }
@@ -38,6 +46,7 @@ public class Person {
     public String getPhoneNumber() {
         return phoneNumber;
     }
+
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
@@ -47,6 +56,9 @@ public class Person {
     public void setLevel(int level) {
         this.level = level;
     }
+
+    public String getPhoto() { return photo; }
+    public void setPhoto(String photo) { this.photo = photo; }
     // Getters and setters are ignored for brevity,
     // but they're required for Room to work.
 }

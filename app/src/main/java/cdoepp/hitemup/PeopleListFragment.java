@@ -27,10 +27,12 @@ import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -42,7 +44,7 @@ public class PeopleListFragment extends Fragment implements
 
         {
 
-    private static final String TAG = "PeopleList";
+    private static final String TAG = "PeopleListFragment";
     private static final String ARG_COLUMN_COUNT = "column-count";
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
@@ -97,16 +99,13 @@ public class PeopleListFragment extends Fragment implements
     // A content URI for the selected contact
     Uri mContactUri;
     // An adapter that binds the result Cursor to the ListView
-    private ContactsCursorAdapter mCursorAdapter;
+    private Cursor contactsCursor;
+    //private ContactsCursorAdapter mCursorAdapter;
+    private ArrayAdapter listAdapter;
+    private List<Person> peopleList;
     private ProgressBar progressBar;
 
 
-
-
-    /**
-     * Mandatory empty constructor for the fragment manager to instantiate the
-     * fragment (e.g. upon screen orientation changes).
-     */
     public PeopleListFragment() {
     }
 
@@ -145,102 +144,95 @@ public class PeopleListFragment extends Fragment implements
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        mCursorAdapter = new ContactsCursorAdapter(getActivity(), null);
-        mContactsList.setAdapter(mCursorAdapter);
+        //mCursorAdapter = new ContactsCursorAdapter(getActivity(), null);
+        peopleList = new ArrayList<Person>();
+        listAdapter = new PeopleListAdapter(getContext(), R.layout.item_person, peopleList);
+        //listAdapter.notifyDataSetChanged();
+        mContactsList.setAdapter(listAdapter);
         mContactsList.setOnItemClickListener(this);
 
         // Initializes the loader
         getLoaderManager().initLoader(0, null, this);
     }
 
-    ////////////////////////////////////////////////////////////////////////
 
-    public class FetchPeopleTask extends AsyncTask<String, Void, List<Person>> {
-        public DatabaseResponse delegate = null;
 
-        public FetchPeopleTask(DatabaseResponse delegate){
-            this.delegate = delegate;
-        }
+    /*
+    Receives the phone's contact data, then passes it on the to an asyntask to check
+    it with our app's database and add any contacts we don't have yet
+     */
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
-        @Override
-        protected List<Person> doInBackground(String... params) {
-            AppDatabase db = Room.databaseBuilder(getContext(), AppDatabase.class, "database-name").build();
-            List<Person> people = db.peopleDao().getAll();
-            Log.d(TAG, "people = " + people.toString());
+        Log.d(TAG, "onLoadFinished");
+        Log.d(TAG, "" + DatabaseUtils.dumpCursorToString(data));
 
-            // Check
-            return people;
-        }
+        // Set cursor to use in the asynctask result; listview is still INVISIBLE
+        contactsCursor = data;
 
-        @Override
-        protected void onPostExecute(List<Person> people) {
-            delegate.processFinish(people);
-            Log.d(TAG, "Executed");
-        }
+        new FetchPeopleTask(this).execute("");
+
     }
 
-    public class addContactTask extends AsyncTask<Person, Void, Void> {
-        @Override
-        protected Void doInBackground(Person... people) {
-            AppDatabase db = Room.databaseBuilder(getContext(), AppDatabase.class, "database-name").build();
-            db.peopleDao().insertAll(people);
-            Log.d(TAG, "insert person = " + people[0].getName());
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            Log.d(TAG, "inserted contact to room database");
-        }
-    }
-
-    // Receives result list from Room database access in AsyncTask
+    // Receives result list from Room database access in AsyncTask, checks with contacts from
+    // loader, then shows list of contacts
     @Override
     public void processFinish(List<Person> people) {
         Log.d(TAG, "processFinish, " + people.toString());
+        Log.d(TAG, "database people = " + people.toString() + ", size = " + people.size());
 
-        Cursor cursor = mCursorAdapter.getCursor();
-        cursor.moveToFirst();
-
-        HashMap<Long, Person> peopleMap = getMapFromList(people);
-        Log.d(TAG, "people = " + people.toString() + ", size = " + people.size());
+        if (contactsCursor == null || people == null) return;
+        contactsCursor.moveToFirst();
 
         //Check people database with phone's contacts:
-        for (int i = 0; i < cursor.getCount(); i++) {
+        for (int i = 0; i < contactsCursor.getCount(); i++) {
 
-            long id = cursor.getLong(0);
-            // TODO: if id not in list, add it:
+            long id = contactsCursor.getLong(0);
 
-            Person person = peopleMap.get(id);
-            if (person == null) {
-                Log.d(TAG, "NULL PERSON, need to add to db");
+            //check if id in list. if not, aadd it:
+            Person person = null;
+            boolean found = false;
+            for (int j = 0; j < people.size(); j++) {
+                person = people.get(j);
+                if (person.getId() == id) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found == false || person == null) {
+                // Create new Person object:
+                Cursor c = getActivity().getContentResolver().query(Data.CONTENT_URI,
+                        new String[] {Data._ID, Data.DISPLAY_NAME_PRIMARY, Data.PHOTO_URI, Data.PHOTO_THUMBNAIL_URI, Phone.NUMBER, Phone.TYPE, Phone.LABEL},
+                        Data.CONTACT_ID + "=?" + " AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'",
+                        new String[] {String.valueOf(id)}, null);
+
+                c.moveToFirst();
+                String name = c.getString(c.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
+                Log.d(TAG, "name = " + name);
+                String phoneNumber = c.getString(c.getColumnIndex(Phone.NUMBER));
+                Log.d(TAG, "phoneNum = " + phoneNumber);
+                String photo = c.getString(c.getColumnIndexOrThrow(Contacts.PHOTO_THUMBNAIL_URI));
+                Log.d(TAG, "photo = " + photo);
+                int level = -1;
+                person = new Person(id, name, phoneNumber, photo, level);
+                people.add(person);
+                peopleList.add(person);
             } else {
-                String name = cursor.getString(cursor.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
+                String name = contactsCursor.getString(contactsCursor.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
                 Log.d(TAG, "id = " + id + ", name = " + name + ", name = " + person.getName());
             }
 
 
-
             //String phoneNumber = c.getString(c.getColumnIndex(Phone.NUMBER));
-            cursor.moveToNext();
+            contactsCursor.moveToNext();
         }
-        mCursorAdapter.swapCursor(cursor, peopleMap);
+        //mCursorAdapter.swapCursor(contactsCursor, peopleMap);
+        Log.d(TAG, "people list size = " + peopleList.size());
+        //listAdapter.clear();
+        //listAdapter.addAll(people);
+        listAdapter.notifyDataSetChanged();
         mContactsList.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.INVISIBLE);
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        Log.d(TAG, "onLoadFinished");
-        Log.d(TAG, "" + DatabaseUtils.dumpCursorToString(data));
-        // Put the result Cursor in the adapter for the ListView
-
-        mCursorAdapter.swapCursor(data);
-
-
-        new FetchPeopleTask(this).execute("");
-
     }
 
     @Override
@@ -260,35 +252,30 @@ public class PeopleListFragment extends Fragment implements
         );
     }
 
-
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
         Log.d(TAG, "onLoaderReset");
         // Delete the reference to the existing Cursor
-        mCursorAdapter.swapCursor(null);
+        //mCursorAdapter.swapCursor(null);
+        contactsCursor = null;
+        peopleList.clear();
+        listAdapter.clear();
+        listAdapter.notifyDataSetChanged();
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View item, int position, long rowID) {
         Log.d(TAG, "item clicked");
 
-        // Get the Cursor
-        Cursor cursor = ((CursorAdapter) parent.getAdapter()).getCursor();
-        // Move to the selected contact
-        cursor.moveToPosition(position);
-        // Get the _ID value
-        mContactId = cursor.getLong(CONTACT_ID_INDEX);
-        // Get the selected LOOKUP KEY
-        mContactKey = cursor.getString(LOOKUP_KEY_INDEX);
-        // Create the contact's content Uri
-        mContactUri = Contacts.getLookupUri(mContactId, mContactKey);
+        Person person = (Person) parent.getAdapter().getItem(position);
+        Log.d(TAG, "name = " + person.getName());
+        mContactId = person.getId();
 
-        Log.d(TAG, "name = " + cursor.getString(cursor.getColumnIndex(Contacts.DISPLAY_NAME_PRIMARY)));
+        //Log.d(TAG, "name = " + cursor.getString(cursor.getColumnIndex(Contacts.DISPLAY_NAME_PRIMARY)));
         //Log.d(TAG, "phone # = " + cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)));
-        //You can use mContactUri as the content URI for retrieving the details for a contact.
 
         Cursor c = getActivity().getContentResolver().query(Data.CONTENT_URI,
-                new String[] {Data._ID, Data.DISPLAY_NAME_PRIMARY, Data.PHOTO_URI, Phone.NUMBER, Phone.TYPE, Phone.LABEL},
+                new String[] {Data._ID, Data.DISPLAY_NAME_PRIMARY, Data.PHOTO_URI, Data.PHOTO_THUMBNAIL_URI, Phone.NUMBER, Phone.TYPE, Phone.LABEL},
                 Data.CONTACT_ID + "=?" + " AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'",
                 new String[] {String.valueOf(mContactId)}, null);
 
@@ -297,12 +284,10 @@ public class PeopleListFragment extends Fragment implements
         String phoneNumber = c.getString(c.getColumnIndex(Phone.NUMBER));
         Log.d(TAG, "phone num = " + phoneNumber);
         String name = c.getString(c.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
-        String photoString = cursor.getString(cursor.getColumnIndexOrThrow(Contacts.PHOTO_THUMBNAIL_URI));
+        String photoString = c.getString(c.getColumnIndexOrThrow(Contacts.PHOTO_THUMBNAIL_URI));
 
 
         Intent intent = new Intent(getActivity(), PersonDetailsActivity.class);
-        intent.putExtra(MainActivity.CONTACT_URI, mContactUri);
-        intent.putExtra(MainActivity.LOOKUP_KEY, mContactKey);
         intent.putExtra(MainActivity.CONTACT_ID, mContactId);
         intent.putExtra(MainActivity.PHONE_NUMBER, phoneNumber);
         intent.putExtra(MainActivity.NAME, name);
@@ -344,4 +329,52 @@ public class PeopleListFragment extends Fragment implements
 
         return map;
     }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Asynctasks:
+
+    public class FetchPeopleTask extends AsyncTask<String, Void, List<Person>> {
+        public DatabaseResponse delegate = null;
+
+        public FetchPeopleTask(DatabaseResponse delegate){
+            this.delegate = delegate;
+        }
+
+        @Override
+        protected List<Person> doInBackground(String... params) {
+            AppDatabase db = Room.databaseBuilder(getContext(),
+                    AppDatabase.class, "database-name")
+                    .addMigrations(AppDatabase.MIGRATION_1_2)
+                    .build();
+            List<Person> people = db.peopleDao().getAll();
+
+            return people;
+        }
+
+        @Override
+        protected void onPostExecute(List<Person> people) {
+            delegate.processFinish(people);
+            Log.d(TAG, "Executed");
+        }
+    }
+
+    public class addContactTask extends AsyncTask<Person, Void, Void> {
+        @Override
+        protected Void doInBackground(Person... people) {
+            AppDatabase db = Room.databaseBuilder(getContext(),
+                    AppDatabase.class, "database-name")
+                    .addMigrations(AppDatabase.MIGRATION_1_2)
+                    .build();
+            db.peopleDao().insertAll(people);
+            Log.d(TAG, "insert person = " + people[0].getName());
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            Log.d(TAG, "inserted contact to room database");
+        }
+    }
+
 }

@@ -30,8 +30,6 @@ public class PersonDetailsActivity extends AppCompatActivity implements
     private static final String TAG = "PersonDetailsActivity";
     private AppBarLayout appBarLayout;
     private CoordinatorLayout coordinatorLayout;
-    private Uri contactUri;
-    private String lookupKey;
     private long contactId;
     private QuickContactBadge contactBadge;
 
@@ -44,14 +42,9 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_person_details);
 
         Intent intent = getIntent();
-        contactUri = (Uri) intent.getParcelableExtra(MainActivity.CONTACT_URI);
-        lookupKey = intent.getStringExtra(MainActivity.LOOKUP_KEY);
         String phoneNumber = intent.getStringExtra(MainActivity.PHONE_NUMBER);
         String name = intent.getStringExtra(MainActivity.NAME);
         String photoString = intent.getStringExtra(MainActivity.PHOTO_URI);
-
-        Log.d(TAG, "uri = " + contactUri.toString());
-        Log.d(TAG, "lookup key = " + lookupKey);
 
         contactBadge = findViewById(R.id.contact_badge);
         contactBadge.assignContactFromPhone(phoneNumber, true);
