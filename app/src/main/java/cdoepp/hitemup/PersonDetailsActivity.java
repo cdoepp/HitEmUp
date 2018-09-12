@@ -8,8 +8,7 @@ import android.database.DatabaseUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.Contacts;
-import android.provider.ContactsContract;
+import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.support.design.widget.AppBarLayout;
@@ -47,82 +46,74 @@ public class PersonDetailsActivity extends AppCompatActivity implements
     private long contactId;
     private QuickContactBadge contactBadge;
 
-    private String name;
-    private String phoneNumber;
     private Person person;
 
-    private TextView userLevel;
+    private TextView tvLevel;
+    private TextView tvName;
+    private ImageButton ibEditStatus;
+    private TextView tvDetails1;
+    private TextView tvPhoneNumber;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_person_details);
 
+        // Initializes the loader framework
+        getSupportLoaderManager().initLoader(0, null, this);
 
-        /*
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        Intent intent = getIntent();
+        person = (Person) intent.getSerializableExtra(MainActivity.PERSON);
+        if (person == null) finish();
+
+        contactBadge = findViewById(R.id.contact_badge);
+        tvName = findViewById(R.id.name);
+        tvPhoneNumber = findViewById(R.id.phone_number);
+        tvLevel = findViewById(R.id.level);
+        ibEditStatus = findViewById(R.id.edit_status);
+        ibEditStatus.setOnClickListener(this);
+
+        tvDetails1 = findViewById(R.id.details_text1);
+        tvDetails1.setText("Id = " + intent.getLongExtra(MainActivity.CONTACT_ID, 0));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Check this user with the phone's contact info again in case changes were made using
+        // the contact badge
+
         Cursor c = this.getContentResolver().query(Data.CONTENT_URI,
                 new String[] {Data._ID, Data.DISPLAY_NAME_PRIMARY, Data.PHOTO_URI, Data.PHOTO_THUMBNAIL_URI, Phone.NUMBER, Phone.TYPE, Phone.LABEL},
                 Data.CONTACT_ID + "=?" + " AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'",
                 new String[] {String.valueOf(person.getId())}, null);
         c.moveToFirst();
 
-        c.moveToFirst();
-        String name = c.getString(c.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
-        Log.d(TAG, "name = " + name);
-        String phoneNumber = c.getString(c.getColumnIndex(Phone.NUMBER));
-        Log.d(TAG, "phoneNum = " + phoneNumber);
-        String photo = c.getString(c.getColumnIndexOrThrow(Contacts.PHOTO_THUMBNAIL_URI));
-        Log.d(TAG, "photo = " + photo);
-        int level = -1;
-        person = new Person(id, name, phoneNumber, photo, level);
-        people.add(person);
-        peopleList.add(person);
-    } else {
-        String name = cursor.getString(cursor.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
-        String name = contactsCursor.getString(contactsCursor.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
-        Log.d(TAG, "id = " + id + ", na
-         */
+        person.setName(c.getString(c.getColumnIndex(Data.DISPLAY_NAME_PRIMARY)));
+        person.setPhoneNumber(c.getString(c.getColumnIndex(Phone.NUMBER)));
+        person.setPhoto(c.getString(c.getColumnIndexOrThrow(Contacts.PHOTO_THUMBNAIL_URI)));
 
 
+        getSupportActionBar().setTitle(person.getName());
 
-        Intent intent = getIntent();
-        person = (Person) intent.getSerializableExtra(MainActivity.PERSON);
-        if (person == null) finish();
-        String phoneNumber = person.getPhoneNumber();
-        String name = person.getName();
-        String photoString = person.getPhoto();
-
-        contactBadge = findViewById(R.id.contact_badge);
-        contactBadge.assignContactFromPhone(phoneNumber, true);
+        contactBadge.assignContactFromPhone(person.getPhoneNumber(), true);
         contactBadge.setImageURI(null);
-        if (photoString != null) {
-            Uri photoUri = Uri.parse(photoString);
+        if (person.getPhoto() != null) {
+            Uri photoUri = Uri.parse(person.getPhoto());
             contactBadge.setImageURI(photoUri);
         } else {
             contactBadge.setImageDrawable(getDrawable(R.drawable.ic_person_black_24dp));
         }
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle(name);
-
-        TextView tvName = findViewById(R.id.name);
-        tvName.setText(name);
-        TextView tvPhoneNumber = findViewById(R.id.phone_number);
-        tvPhoneNumber.setText(phoneNumber);
-        TextView tvDetails1 = findViewById(R.id.details_text1);
-        tvDetails1.setText("Id = " + intent.getLongExtra(MainActivity.CONTACT_ID, 0));
-
-        userLevel = findViewById(R.id.level);
-        userLevel.setText("Priority level = " + person.getLevel());
-
-        ImageButton editStatus = findViewById(R.id.edit_status);
-        editStatus.setOnClickListener(this);
-
-
-        // Initializes the loader framework
-        getSupportLoaderManager().initLoader(0, null, this);
+        tvName.setText(person.getName());
+        tvPhoneNumber.setText(person.getPhoneNumber());
+        tvLevel.setText("Priority level = " + person.getLevel());
 
     }
 
@@ -152,7 +143,7 @@ public class PersonDetailsActivity extends AppCompatActivity implements
             public void onClick(DialogInterface dialogInterface, int i) {
                 Log.d(TAG, "onClick: " + numberPicker.getValue());
                 person.setLevel(numberPicker.getValue());
-                userLevel.setText("Priority level = " + numberPicker.getValue());
+                tvLevel.setText("Priority level = " + numberPicker.getValue());
                 new updateContactTask().execute(person);
 
             }
