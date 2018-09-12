@@ -143,11 +143,10 @@ public class PeopleListFragment extends Fragment implements
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        Log.d(TAG, "onActivityCreated");
 
-        //mCursorAdapter = new ContactsCursorAdapter(getActivity(), null);
         peopleList = new ArrayList<Person>();
         listAdapter = new PeopleListAdapter(getContext(), R.layout.item_person, peopleList);
-        //listAdapter.notifyDataSetChanged();
         mContactsList.setAdapter(listAdapter);
         mContactsList.setOnItemClickListener(this);
 
@@ -178,11 +177,13 @@ public class PeopleListFragment extends Fragment implements
     // loader, then shows list of contacts
     @Override
     public void processFinish(List<Person> people) {
-        Log.d(TAG, "processFinish, " + people.toString());
-        Log.d(TAG, "database people = " + people.toString() + ", size = " + people.size());
+        Log.d(TAG, "processFinish, " + people.toString() + ", size = " + people.size());
 
         if (contactsCursor == null || people == null) return;
         contactsCursor.moveToFirst();
+
+        peopleList.clear();
+        for (Person person : people) peopleList.add(person);
 
         //Check people database with phone's contacts:
         for (int i = 0; i < contactsCursor.getCount(); i++) {
@@ -192,41 +193,38 @@ public class PeopleListFragment extends Fragment implements
             //check if id in list. if not, aadd it:
             Person person = null;
             boolean found = false;
-            for (int j = 0; j < people.size(); j++) {
-                person = people.get(j);
+            for (int j = 0; j < peopleList.size(); j++) {
+                person = peopleList.get(j);
                 if (person.getId() == id) {
                     found = true;
                     break;
                 }
             }
+            // Create new Person object and add to our database:
+            Cursor c = getActivity().getContentResolver().query(Data.CONTENT_URI,
+                    new String[] {Data._ID, Data.DISPLAY_NAME_PRIMARY, Data.PHOTO_URI, Data.PHOTO_THUMBNAIL_URI, Phone.NUMBER, Phone.TYPE, Phone.LABEL},
+                    Data.CONTACT_ID + "=?" + " AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'",
+                    new String[] {String.valueOf(id)}, null);
+
+            c.moveToFirst();
+            String name = c.getString(c.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
+            String phoneNumber = c.getString(c.getColumnIndex(Phone.NUMBER));
+            String photo = c.getString(c.getColumnIndexOrThrow(Contacts.PHOTO_THUMBNAIL_URI));
             if (found == false || person == null) {
-                // Create new Person object:
-                Cursor c = getActivity().getContentResolver().query(Data.CONTENT_URI,
-                        new String[] {Data._ID, Data.DISPLAY_NAME_PRIMARY, Data.PHOTO_URI, Data.PHOTO_THUMBNAIL_URI, Phone.NUMBER, Phone.TYPE, Phone.LABEL},
-                        Data.CONTACT_ID + "=?" + " AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'",
-                        new String[] {String.valueOf(id)}, null);
-
-                c.moveToFirst();
-                String name = c.getString(c.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
-                Log.d(TAG, "name = " + name);
-                String phoneNumber = c.getString(c.getColumnIndex(Phone.NUMBER));
-                Log.d(TAG, "phoneNum = " + phoneNumber);
-                String photo = c.getString(c.getColumnIndexOrThrow(Contacts.PHOTO_THUMBNAIL_URI));
-                Log.d(TAG, "photo = " + photo);
-                int level = -1;
+                int level = 0;
                 person = new Person(id, name, phoneNumber, photo, level);
-                people.add(person);
                 peopleList.add(person);
+                new addContactTask().execute(person);
+
             } else {
-                String name = contactsCursor.getString(contactsCursor.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
-                Log.d(TAG, "id = " + id + ", name = " + name + ", name = " + person.getName());
+                // Already in database, update parameters:
+                int level = person.getLevel();
+                person.setName(name);
+                person.setPhoneNumber(phoneNumber);
+                person.setPhoto(photo);
             }
-
-
-            //String phoneNumber = c.getString(c.getColumnIndex(Phone.NUMBER));
             contactsCursor.moveToNext();
         }
-        //mCursorAdapter.swapCursor(contactsCursor, peopleMap);
         Log.d(TAG, "people list size = " + peopleList.size());
         //listAdapter.clear();
         //listAdapter.addAll(people);
@@ -269,31 +267,35 @@ public class PeopleListFragment extends Fragment implements
 
         Person person = (Person) parent.getAdapter().getItem(position);
         Log.d(TAG, "name = " + person.getName());
-        mContactId = person.getId();
-
-        //Log.d(TAG, "name = " + cursor.getString(cursor.getColumnIndex(Contacts.DISPLAY_NAME_PRIMARY)));
-        //Log.d(TAG, "phone # = " + cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)));
-
-        Cursor c = getActivity().getContentResolver().query(Data.CONTENT_URI,
-                new String[] {Data._ID, Data.DISPLAY_NAME_PRIMARY, Data.PHOTO_URI, Data.PHOTO_THUMBNAIL_URI, Phone.NUMBER, Phone.TYPE, Phone.LABEL},
-                Data.CONTACT_ID + "=?" + " AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'",
-                new String[] {String.valueOf(mContactId)}, null);
-
-        c.moveToFirst();
-        Log.d(TAG, "new cursor = " + DatabaseUtils.dumpCursorToString(c));
-        String phoneNumber = c.getString(c.getColumnIndex(Phone.NUMBER));
-        Log.d(TAG, "phone num = " + phoneNumber);
-        String name = c.getString(c.getColumnIndex(Data.DISPLAY_NAME_PRIMARY));
-        String photoString = c.getString(c.getColumnIndexOrThrow(Contacts.PHOTO_THUMBNAIL_URI));
-
 
         Intent intent = new Intent(getActivity(), PersonDetailsActivity.class);
-        intent.putExtra(MainActivity.CONTACT_ID, mContactId);
-        intent.putExtra(MainActivity.PHONE_NUMBER, phoneNumber);
-        intent.putExtra(MainActivity.NAME, name);
-        intent.putExtra(MainActivity.PHOTO_URI, photoString);
-        startActivity(intent);
+        intent.putExtra(MainActivity.PERSON, person);
+        startActivityForResult(intent, MainActivity.EDIT);
 
+    }
+
+    // Receives edited person from details activity and updates our list with changes made
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == MainActivity.EDIT) {
+            if (resultCode == MainActivity.RESULT_OK) {
+                Person person = (Person) data.getSerializableExtra(MainActivity.PERSON);
+                Log.d(TAG, "onActivityResult, name = " + person.getName() + ", level = " + person.getLevel());
+                // TODO: replace person object with correct one based on id
+                for (int i = 0; i < peopleList.size(); i++) {
+                    Person p = peopleList.get(i);
+                    if (p.getId() == person.getId()) {
+                        p.setName(person.getName());
+                        p.setLevel(person.getLevel());
+                        p.setPhoneNumber(person.getPhoneNumber());
+                        p.setPhoto(person.getPhoto());
+                    }
+                }
+                listAdapter.notifyDataSetChanged();
+            }
+        }
     }
 
 
@@ -328,6 +330,15 @@ public class PeopleListFragment extends Fragment implements
 
 
         return map;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        //Log.d(TAG, "onResume");
+        //if (listAdapter != null) listAdapter.notifyDataSetChanged();
+
+
     }
 
     ////////////////////////////////////////////////////////////////////////

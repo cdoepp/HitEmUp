@@ -39,7 +39,6 @@ public class PeopleListAdapter extends ArrayAdapter<Person> {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        Log.d(TAG, "getView, pos = " + position);
         ViewHolder holder;
         if (convertView == null) {
             convertView = mInflater.inflate(R.layout.item_person, null);
@@ -65,7 +64,7 @@ public class PeopleListAdapter extends ArrayAdapter<Person> {
             } else {
                 holder.photo.setImageDrawable(getContext().getDrawable(R.drawable.ic_person_black_24dp));
             }
-            holder.level.setText("?");
+            holder.level.setText("" + person.getLevel());
 
         }
 

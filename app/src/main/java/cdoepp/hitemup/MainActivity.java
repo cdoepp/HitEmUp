@@ -24,6 +24,10 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         PeopleListFragment.OnListFragmentInteractionListener {
 
+    public static final String PERSON = "person";
+    public static final int EDIT = 1;
+    public static final int RESULT_OK = 1;
+    public static final int RESULT_ERROR = 2;
     public static final String CONTACT_URI = "CONTACT_URI";
     public static final String LOOKUP_KEY = "LOOKUP_KEY";
     public static final String CONTACT_ID = "CONTACT_ID";

@@ -26,7 +26,12 @@
         <activity
             android:name=".PersonDetailsActivity"
             android:label="@string/title_activity_person_details"
-            android:theme="@style/YTWTheme"></activity>
+            android:theme="@style/YTWTheme">
+
+        </activity>
+
+
+
     </application>
 
 </manifest>

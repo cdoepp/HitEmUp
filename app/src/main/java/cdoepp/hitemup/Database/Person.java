@@ -4,12 +4,14 @@ import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.PrimaryKey;
 
+import java.io.Serializable;
+
 /**
  * Created by cdoepp on 7/29/18.
  */
 
 @Entity(tableName = "People")
-public class Person {
+public class Person implements Serializable {
     @PrimaryKey
     private long id;
 
