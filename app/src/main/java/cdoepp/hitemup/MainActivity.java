@@ -1,14 +1,19 @@
 package cdoepp.hitemup;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.provider.Contacts;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.PopupMenu;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -22,8 +27,17 @@ import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
-        PeopleListFragment.OnListFragmentInteractionListener {
+        PeopleListFragment.OnListFragmentInteractionListener,
+        PopupMenu.OnMenuItemClickListener {
 
+    int PERMISSION_ALL = 1;
+    String[] PERMISSIONS = {
+            android.Manifest.permission.READ_CONTACTS,
+            android.Manifest.permission.READ_SMS,
+            android.Manifest.permission.READ_CALL_LOG
+    };
+
+    public static final String PEOPLE_LIST_FRAGMENT = "PeopleListFragment";
     public static final String PERSON = "person";
     public static final int EDIT = 1;
     public static final int RESULT_OK = 1;
@@ -42,10 +56,10 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -54,7 +68,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
@@ -63,34 +77,32 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        // Here, thisActivity is the current activity
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
-                    Manifest.permission.READ_CONTACTS)) {
-
-                // Show an expanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-
-            } else {
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(MainActivity.this,
-                        new String[]{Manifest.permission.READ_CONTACTS},
-                        MY_PERMISSIONS_REQUEST_READ_CONTACTS);
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
-            }
+        if(!hasPermissions(this, PERMISSIONS)){
+            ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
+
         showPeopleListFragment();
     }
 
+    public static boolean hasPermissions(Context context, String... permissions) {
+        if (context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        Log.d(TAG, "onRequestPermissionsResult");
+    }
+
     public void showPeopleListFragment() {
-        getSupportFragmentManager().beginTransaction().replace(R.id.frag_container, PeopleListFragment.newInstance(1)).commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.frag_container, PeopleListFragment.newInstance(1), PEOPLE_LIST_FRAGMENT).commit();
     }
 
     @Override
@@ -112,17 +124,39 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
+        Log.d(TAG, "onOptionsItemSelected, id = " + id);
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        } else if (id == R.id.action_sort) {
+            View menuItemView = findViewById(R.id.toolbar); // SAME ID AS MENU ID
+            PopupMenu popupMenu = new PopupMenu(this, menuItemView, Gravity.RIGHT|Gravity.TOP, R.attr.actionOverflowMenuStyle, 0);
+            //PopupMenu popupMenu = new PopupMenu(this, menuItemView);
+            popupMenu.inflate(R.menu.sort_contacts);
+            popupMenu.setOnMenuItemClickListener(this);
+            popupMenu.show();
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    // Called when a sort popup menu item is clicked:
+    @Override
+    public boolean onMenuItemClick(MenuItem item) {
+        int id = item.getItemId();
+        Log.d(TAG, "onMenuItemClick, id = " + id);
+        Fragment peopleListFragment = getSupportFragmentManager().findFragmentByTag(PEOPLE_LIST_FRAGMENT);
+        if (peopleListFragment == null) return false;
+
+        if (id == R.id.sort_name)
+            ((PeopleListFragment) peopleListFragment).setSortMethod(PeopleListFragment.SORT_METHOD_NAME);
+        else if (id == R.id.sort_level)
+            ((PeopleListFragment) peopleListFragment).setSortMethod(PeopleListFragment.SORT_METHOD_LEVEL);
+
+        return true;
     }
 
     @SuppressWarnings("StatementWithEmptyBody")

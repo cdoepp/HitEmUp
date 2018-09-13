@@ -7,5 +7,9 @@
     <string name="action_settings">Settings</string>
     <string name="title_activity_person_details">PersonDetailsActivity</string>
 
+    <string name="action_sort">Sort</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_level">Level</string>
+
 
 </resources>

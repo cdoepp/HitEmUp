@@ -3,6 +3,9 @@
     package="cdoepp.hitemup">
 
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+
 
     <application
         android:allowBackup="true"

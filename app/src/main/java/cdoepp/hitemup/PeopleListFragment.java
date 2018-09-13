@@ -4,11 +4,13 @@ import android.annotation.SuppressLint;
 import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -33,6 +35,8 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -41,11 +45,14 @@ public class PeopleListFragment extends Fragment implements
         LoaderManager.LoaderCallbacks<Cursor>,
         AdapterView.OnItemClickListener,
         DatabaseResponse
-
         {
 
     private static final String TAG = "PeopleListFragment";
     private static final String ARG_COLUMN_COUNT = "column-count";
+    public static final String SAVE_SORT_METHOD = "saved_sort_method";
+    public static final int SORT_METHOD_NAME = 0;
+    public static final int SORT_METHOD_LEVEL = 1;
+
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
 
@@ -105,6 +112,25 @@ public class PeopleListFragment extends Fragment implements
     private List<Person> peopleList;
     private ProgressBar progressBar;
 
+    // Sorting the list of contacts:
+    private Comparator<Person> SORT_BY_NAME = new Comparator<Person>() {
+        public int compare(Person p1, Person p2) {
+            int res = String.CASE_INSENSITIVE_ORDER.compare(p1.getName(), p2.getName());
+            return res;
+        }
+    };
+
+    private Comparator<Person> SORT_BY_LEVEL = new Comparator<Person>() {
+        public int compare(Person p1, Person p2) {
+            if (p1.getLevel() < p2.getLevel())
+                return 1;
+            else if (p1.getLevel() > p2.getLevel())
+                return -1;
+            else    // sort by name if levels are equal:
+                return String.CASE_INSENSITIVE_ORDER.compare(p1.getName(), p2.getName());
+        }
+    };
+
 
     public PeopleListFragment() {
     }
@@ -153,8 +179,6 @@ public class PeopleListFragment extends Fragment implements
         // Initializes the loader
         getLoaderManager().initLoader(0, null, this);
     }
-
-
 
     /*
     Receives the phone's contact data, then passes it on the to an asyntask to check
@@ -228,7 +252,7 @@ public class PeopleListFragment extends Fragment implements
         Log.d(TAG, "people list size = " + peopleList.size());
         //listAdapter.clear();
         //listAdapter.addAll(people);
-        listAdapter.notifyDataSetChanged();
+        sortListView();
         mContactsList.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.INVISIBLE);
     }
@@ -293,9 +317,30 @@ public class PeopleListFragment extends Fragment implements
                         p.setPhoto(person.getPhoto());
                     }
                 }
-                listAdapter.notifyDataSetChanged();
+                sortListView();
             }
         }
+    }
+
+    // Called by main activity when the user changes the sort method using the toolbar button
+    public void setSortMethod(int sortMethod) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(SAVE_SORT_METHOD, sortMethod);
+        editor.apply();
+        sortListView();
+    }
+
+    public void sortListView() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        int sortMethod = preferences.getInt(SAVE_SORT_METHOD, 0);
+        if (sortMethod == SORT_METHOD_NAME)
+            Collections.sort(peopleList, SORT_BY_NAME);
+        else if (sortMethod == SORT_METHOD_LEVEL)
+            Collections.sort(peopleList, SORT_BY_LEVEL);
+        listAdapter = new PeopleListAdapter(getContext(), R.layout.item_person, peopleList);
+        mContactsList.setAdapter(listAdapter);
+        listAdapter.notifyDataSetChanged();
     }
 
 
@@ -336,9 +381,6 @@ public class PeopleListFragment extends Fragment implements
     public void onResume() {
         super.onResume();
         //Log.d(TAG, "onResume");
-        //if (listAdapter != null) listAdapter.notifyDataSetChanged();
-
-
     }
 
     ////////////////////////////////////////////////////////////////////////
