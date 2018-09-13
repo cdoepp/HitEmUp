@@ -10,6 +10,7 @@ import android.database.DatabaseUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -112,7 +113,9 @@ public class PeopleListFragment extends Fragment implements
     private List<Person> peopleList;
     private ProgressBar progressBar;
 
-    // Sorting the list of contacts:
+    private long mLastClickTime = 0;
+
+            // Sorting the list of contacts:
     private Comparator<Person> SORT_BY_NAME = new Comparator<Person>() {
         public int compare(Person p1, Person p2) {
             int res = String.CASE_INSENSITIVE_ORDER.compare(p1.getName(), p2.getName());
@@ -287,10 +290,12 @@ public class PeopleListFragment extends Fragment implements
 
     @Override
     public void onItemClick(AdapterView<?> parent, View item, int position, long rowID) {
-        Log.d(TAG, "item clicked");
+        // Prevents multiple clicks, using threshold of 1 second:
+        if (SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;
+        mLastClickTime = SystemClock.elapsedRealtime();
 
         Person person = (Person) parent.getAdapter().getItem(position);
-        Log.d(TAG, "name = " + person.getName());
+        Log.d(TAG, "item clicked, name = " + person.getName());
 
         Intent intent = new Intent(getActivity(), PersonDetailsActivity.class);
         intent.putExtra(MainActivity.PERSON, person);
