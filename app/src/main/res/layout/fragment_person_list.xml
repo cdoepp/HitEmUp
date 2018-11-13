@@ -6,7 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_gravity="center"
-    app:layoutManager="LinearLayoutManager"
     android:name="cdoepp.hitemup.PeopleListFragment"
     tools:context="cdoepp.hitemup.PeopleListFragment"
     >
@@ -32,7 +31,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
 
         />
-
-
 
 </android.support.constraint.ConstraintLayout>

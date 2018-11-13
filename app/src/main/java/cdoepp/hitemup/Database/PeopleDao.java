@@ -24,6 +24,9 @@ public interface PeopleDao {
     @Query("SELECT * FROM People WHERE name LIKE :name")
     Person findByName(String name);
 
+    @Query("SELECT * FROM People WHERE phone_number LIKE :phoneNumber")
+    Person findByPhoneNumber(String phoneNumber);
+
     @Query("SELECT COUNT(*) from People")
     int countPeople();
 
@@ -32,6 +35,9 @@ public interface PeopleDao {
 
     @Delete
     void delete(Person person);
+
+    @Query("DELETE FROM People WHERE id = :id")
+    void deleteById(long id);
 
     @Update
     void update(Person person);

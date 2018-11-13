@@ -184,4 +184,8 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
+    public static boolean phoneNumbersEqual(String num1, String num2) {
+        return true;
+    }
+
 }

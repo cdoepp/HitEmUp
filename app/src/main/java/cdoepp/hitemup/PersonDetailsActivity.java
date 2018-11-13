@@ -71,6 +71,8 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         person = (Person) intent.getSerializableExtra(MainActivity.PERSON);
         if (person == null) finish();
 
+        Log.d(TAG, "THIS PERSON's MESSAGES = " + person.getMessages().toString());
+
         contactBadge = findViewById(R.id.contact_badge);
         tvName = findViewById(R.id.name);
         tvPhoneNumber = findViewById(R.id.phone_number);
