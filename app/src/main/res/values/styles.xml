@@ -23,6 +23,14 @@
         <item name="colorAccent">@color/ytw_orange</item>
     </style>
 
+    <style name="YTWThemeActionBar" parent="Theme.AppCompat.Light" >
+        <item name="colorPrimary">@color/ytw_blue</item>
+        <item name="colorPrimaryDark">@color/ytw_dark_blue</item>
+        <item name="colorAccent">@color/ytw_orange</item>
+        <item name="actionBarTheme">@style/ToolbarTheme</item>
+    </style>
+
+
     <style name="YTWThemeNoActionBar" parent="Theme.AppCompat.Light.NoActionBar" >
         <item name="colorPrimary">@color/ytw_blue</item>
         <item name="colorPrimaryDark">@color/ytw_dark_blue</item>
