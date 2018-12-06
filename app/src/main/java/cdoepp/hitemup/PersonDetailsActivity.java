@@ -24,6 +24,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.NumberPicker;
@@ -98,6 +99,8 @@ public class PersonDetailsActivity extends AppCompatActivity implements
     public void insertRecentMessages(List<Message> messages) {
         TextView tvMessage;
         TextView tvTimestamp;
+        ImageView iconSent;
+        ImageView iconReceived;
 
         if (messages.size() != 0)
             emptyHistory.setVisibility(View.GONE);
@@ -112,33 +115,45 @@ public class PersonDetailsActivity extends AppCompatActivity implements
                     Log.d(TAG, "MESSAGE VIEW CLICKED");
                 }
             });
+
             tvMessage = messageView.findViewById(R.id.message);
             tvTimestamp = messageView.findViewById(R.id.timestamp);
-            tvMessage.setText(message.getText());
+            iconSent = messageView.findViewById(R.id.icon_sent);
+            iconReceived = messageView.findViewById(R.id.icon_received);
+
+            if (message.getType() == Message.TYPE_RECEIVED) {
+                iconSent.setVisibility(View.INVISIBLE);
+                iconReceived.setVisibility(View.VISIBLE);
+                tvMessage.setText(message.getText());
+            } else {
+                tvMessage.setText("You: " + message.getText());
+            }
+
             tvTimestamp.setText(message.getDate().toString());
             history.addView(messageView);
 
-            
-            if (i != messages.size() - 1 && i != 2) {
-                View dividerView = getLayoutInflater().inflate(R.layout.item_list_divider, null);
-                history.addView(dividerView);
-            }
 
-            i++;
-        }
+            if (i < messages.size() - 1 && i <
+    2) {
+        View dividerView = getLayoutInflater().inflate(R.layout.item_list_divider, null);
+        history.addView(dividerView);
     }
 
-    @Override
-    protected void onResume() {
+    i++;
+}
+    }
+
+@Override
+protected void onResume() {
         super.onResume();
 
         // Check this user with the phone's contact info again in case changes were made using
         // the contact badge
 
         Cursor c = this.getContentResolver().query(Data.CONTENT_URI,
-                new String[] {Data._ID, Data.DISPLAY_NAME_PRIMARY, Data.PHOTO_URI, Data.PHOTO_THUMBNAIL_URI, Phone.NUMBER, Phone.TYPE, Phone.LABEL},
-                Data.CONTACT_ID + "=?" + " AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'",
-                new String[] {String.valueOf(person.getId())}, null);
+        new String[] {Data._ID, Data.DISPLAY_NAME_PRIMARY, Data.PHOTO_URI, Data.PHOTO_THUMBNAIL_URI, Phone.NUMBER, Phone.TYPE, Phone.LABEL},
+        Data.CONTACT_ID + "=?" + " AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'",
+        new String[] {String.valueOf(person.getId())}, null);
         c.moveToFirst();
 
         person.setName(c.getString(c.getColumnIndex(Data.DISPLAY_NAME_PRIMARY)));
@@ -151,19 +166,18 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         contactBadge.assignContactFromPhone(person.getPhoneNumber(), true);
         contactBadge.setImageURI(null);
         if (person.getPhoto() != null) {
-            Uri photoUri = Uri.parse(person.getPhoto());
-            contactBadge.setImageURI(photoUri);
+        Uri photoUri = Uri.parse(person.getPhoto());
+        contactBadge.setImageURI(photoUri);
         } else {
-            contactBadge.setImageDrawable(getDrawable(R.drawable.ic_person_black_24dp));
+        contactBadge.setImageDrawable(getDrawable(R.drawable.ic_person_black_24dp));
         }
 
         tvName.setText(person.getName());
         tvPhoneNumber.setText(person.getPhoneNumber());
         tvLevel.setText("Priority level = " + person.getLevel());
 
-    }
-
-    @Override
+        }
+@Override
     public void onClick(View v) {
         if (v.getId() == findViewById(R.id.edit_status).getId()) Log.d(TAG, "EDIT STATUS");
         // Show numberpicker dialog:
