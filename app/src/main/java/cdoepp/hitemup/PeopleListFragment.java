@@ -114,7 +114,6 @@ public class PeopleListFragment extends Fragment implements
     Uri mContactUri;
     // An adapter that binds the result Cursor to the ListView
     private Cursor contactsCursor;
-    //private ContactsCursorAdapter mCursorAdapter;
     private ArrayAdapter listAdapter;
     private List<Person> peopleList;
     private ProgressBar progressBar;

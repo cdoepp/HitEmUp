@@ -1,6 +1,7 @@
 package cdoepp.hitemup.Database;
 
 import android.arch.persistence.room.TypeConverter;
+import android.util.Log;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -17,7 +18,8 @@ import cdoepp.hitemup.Message;
 public class Converters {
     @TypeConverter
     public static ArrayList<Message> fromString(String value) {
-        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+        Log.d("CONVERTERS", "value = " + value);
+        Type listType = new TypeToken<ArrayList<Message>>() {}.getType();
         return new Gson().fromJson(value, listType);
     }
 

@@ -2,18 +2,22 @@ package cdoepp.hitemup;
 
 import android.content.Context;
 import android.net.Uri;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.MediaController;
 import android.widget.TextView;
 import android.widget.VideoView;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import cdoepp.hitemup.Database.Person;
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -46,6 +50,8 @@ public class PeopleListAdapter extends ArrayAdapter<Person> {
             holder.name = (TextView)convertView.findViewById(R.id.name);
             holder.photo = convertView.findViewById(R.id.photo);
             holder.level = convertView.findViewById(R.id.level);
+            holder.details = convertView.findViewById(R.id.details);
+            holder.alertIcon = convertView.findViewById(R.id.alert_icon);
             convertView.setTag(holder);
         }
         else {
@@ -66,12 +72,55 @@ public class PeopleListAdapter extends ArrayAdapter<Person> {
             }
             holder.level.setText("" + person.getLevel());
 
+            List<Message> messages = person.getMessages();
+            if (messages != null && messages.size() > 0) {
+                Message lastMessage = person.getMessages().get(0);
+                long currentTimestamp = new Date().getTime();
+                long days = TimeUnit.MILLISECONDS.toDays(currentTimestamp - lastMessage.getTimestamp());
+                holder.details.setText(getLastContactTime(lastMessage.getTimestamp()));
+
+                if (person.getLevel() > 0 && days > MainActivity.CONTACT_PRIORITY_MAP.get(person.getLevel())) {
+                    holder.details.setTextColor(ContextCompat.getColor(mContext, R.color.red_alert));
+                    holder.alertIcon.setVisibility(View.VISIBLE);
+
+                } else {
+                    holder.details.setTextColor(ContextCompat.getColor(mContext, R.color.default_text));
+                    holder.alertIcon.setVisibility(View.GONE);
+                }
+
+            } else if (messages != null && messages.size() == 0) {
+                holder.details.setText("No contact records");
+                holder.details.setTextColor(ContextCompat.getColor(mContext, R.color.default_text));
+                holder.alertIcon.setVisibility(View.GONE);
+            }
+
         }
 
         return convertView;
     }
 
+    private String getLastContactTime(long lastContact) {
+        long currentTimestamp = new Date().getTime();
+        long time = TimeUnit.MILLISECONDS.toDays(currentTimestamp - lastContact);
+        String units = "day";
+        if (time == 0) {
+            time = TimeUnit.MILLISECONDS.toHours(currentTimestamp - lastContact);
+            units = "hour";
+        }
+        if (time == 0) {
+            time = TimeUnit.MILLISECONDS.toMinutes(currentTimestamp - lastContact);
+            units = "minute";
+        }
+        if (time == 0) {
+            time = TimeUnit.MILLISECONDS.toSeconds(currentTimestamp - lastContact);
+            units = "second";
+        }
 
+        if (time > 1)
+            units = units + "s";
+
+        return "Last contacted " + time + " " + units + " ago";
+    }
 
 
     @Override
@@ -88,5 +137,7 @@ public class PeopleListAdapter extends ArrayAdapter<Person> {
         TextView name;
         CircleImageView photo;
         TextView level;
+        TextView details;
+        ImageView alertIcon;
     }
 }

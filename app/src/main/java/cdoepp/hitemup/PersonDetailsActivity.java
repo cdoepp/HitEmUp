@@ -143,8 +143,8 @@ public class PersonDetailsActivity extends AppCompatActivity implements
 }
     }
 
-@Override
-protected void onResume() {
+    @Override
+    protected void onResume() {
         super.onResume();
 
         // Check this user with the phone's contact info again in case changes were made using

@@ -24,6 +24,8 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.HashMap;
+
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
@@ -36,6 +38,24 @@ public class MainActivity extends AppCompatActivity
             android.Manifest.permission.READ_SMS,
             android.Manifest.permission.READ_CALL_LOG
     };
+
+    public static final HashMap<Integer, Integer> CONTACT_PRIORITY_MAP = createMap();
+    private static HashMap<Integer, Integer> createMap()
+    {
+        //int[] pmap = {0, 120, 90, 70, 60, 50, 40, 30, 21, 13};
+        HashMap<Integer, Integer> priorityMap = new HashMap<Integer, Integer>();
+        priorityMap.put(1, 120);
+        priorityMap.put(2, 90);
+        priorityMap.put(3, 70);
+        priorityMap.put(4, 60);
+        priorityMap.put(5, 50);
+        priorityMap.put(6, 40);
+        priorityMap.put(7, 30);
+        priorityMap.put(8, 21);
+        priorityMap.put(9, 14);
+        priorityMap.put(10, 7);
+        return priorityMap;
+    }
 
     public static final String PEOPLE_LIST_FRAGMENT = "PeopleListFragment";
     public static final String PERSON = "person";
@@ -181,10 +201,6 @@ public class MainActivity extends AppCompatActivity
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
-        return true;
-    }
-
-    public static boolean phoneNumbersEqual(String num1, String num2) {
         return true;
     }
 
