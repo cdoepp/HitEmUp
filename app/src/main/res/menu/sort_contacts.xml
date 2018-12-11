@@ -13,4 +13,10 @@
         android:orderInCategory="2"
         android:title="@string/sort_level"
         />
+
+    <item
+        android:id="@+id/sort_last_contact"
+        android:orderInCategory="3"
+        android:title="Last Contact"
+        />
 </menu>

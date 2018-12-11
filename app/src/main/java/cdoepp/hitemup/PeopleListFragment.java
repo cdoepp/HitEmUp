@@ -62,17 +62,15 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 
-public class PeopleListFragment extends Fragment implements
-        LoaderManager.LoaderCallbacks<Cursor>,
-        AdapterView.OnItemClickListener,
-        DatabaseResponse
-        {
+public class PeopleListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>,
+        AdapterView.OnItemClickListener, DatabaseResponse {
 
     private static final String TAG = "PeopleListFragment";
     private static final String ARG_COLUMN_COUNT = "column-count";
     public static final String SAVE_SORT_METHOD = "saved_sort_method";
     public static final int SORT_METHOD_NAME = 0;
     public static final int SORT_METHOD_LEVEL = 1;
+    public static final int SORT_METHOD_LAST_CONTACT = 2;
 
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
@@ -114,13 +112,14 @@ public class PeopleListFragment extends Fragment implements
     Uri mContactUri;
     // An adapter that binds the result Cursor to the ListView
     private Cursor contactsCursor;
+    //private ContactsCursorAdapter mCursorAdapter;
     private ArrayAdapter listAdapter;
     private List<Person> peopleList;
     private ProgressBar progressBar;
 
     private long mLastClickTime = 0;
 
-            // Sorting the list of contacts:
+    //Sorting the list of contacts:
     private Comparator<Person> SORT_BY_NAME = new Comparator<Person>() {
         public int compare(Person p1, Person p2) {
             int res = String.CASE_INSENSITIVE_ORDER.compare(p1.getName(), p2.getName());
@@ -136,6 +135,30 @@ public class PeopleListFragment extends Fragment implements
                 return -1;
             else    // sort by name if levels are equal:
                 return String.CASE_INSENSITIVE_ORDER.compare(p1.getName(), p2.getName());
+        }
+    };
+
+    private Comparator<Person> SORT_BY_LAST_CONTACT = new Comparator<Person>() {
+        public int compare(Person p1, Person p2) {
+            List<Message> m1 = p1.getMessages();
+            List<Message> m2 = p2.getMessages();
+            if ((m1 == null || m1.size() == 0) && (m2 == null || m2.size() == 0)) {
+                return String.CASE_INSENSITIVE_ORDER.compare(p1.getName(), p2.getName());
+            } else if ((m1 == null || m1.size() == 0) && (m2 != null && m2.size() > 0)) {
+                return 1;
+            } else if ((m1 != null && m1.size() > 0) && (m2 == null || m2.size() == 0)) {
+                return -1;
+            } else {
+                long currentTimestamp = new Date().getTime();
+                long d1 = currentTimestamp - m1.get(0).getTimestamp();
+                long d2 = currentTimestamp - m2.get(0).getTimestamp();
+                if (d1 < d2)
+                    return -1;
+                else if (d1 > d2)
+                    return 1;
+                else
+                    return String.CASE_INSENSITIVE_ORDER.compare(p1.getName(), p2.getName());
+            }
         }
     };
 
@@ -213,14 +236,6 @@ public class PeopleListFragment extends Fragment implements
     @Override
     public void processFinish(List<Person> people) {
         Log.d(TAG, "processFinish, " + people.toString() + ", size = " + people.size());
-
-        //Cursor smsCursor = getActivity().getContentResolver().query(Uri.parse("content://sms/inbox"), null, null, null, null);
-        //Log.d(TAG, "sms cursor = " + smsCursor.toString() + ", count = " + smsCursor.getCount());
-
-        //List<String> smsList = getAllSmsFromProvider();
-        //Log.d(TAG, "list = " + smsList.toString());
-        //List<String> mmsList = getAllMms();
-        //List<String> messageList2 = getAllSMSAndMMS2();
 
         if (contactsCursor == null || people == null) return;
         contactsCursor.moveToFirst();
@@ -362,6 +377,8 @@ public class PeopleListFragment extends Fragment implements
             Collections.sort(peopleList, SORT_BY_NAME);
         else if (sortMethod == SORT_METHOD_LEVEL)
             Collections.sort(peopleList, SORT_BY_LEVEL);
+        else if (sortMethod == SORT_METHOD_LAST_CONTACT)
+            Collections.sort(peopleList, SORT_BY_LAST_CONTACT);
         listAdapter = new PeopleListAdapter(getContext(), R.layout.item_person, peopleList);
         mContactsList.setAdapter(listAdapter);
         listAdapter.notifyDataSetChanged();
@@ -405,7 +422,6 @@ public class PeopleListFragment extends Fragment implements
         super.onResume();
         //Log.d(TAG, "onResume");
     }
-
 
 
 

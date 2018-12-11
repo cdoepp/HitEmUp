@@ -175,6 +175,8 @@ public class MainActivity extends AppCompatActivity
             ((PeopleListFragment) peopleListFragment).setSortMethod(PeopleListFragment.SORT_METHOD_NAME);
         else if (id == R.id.sort_level)
             ((PeopleListFragment) peopleListFragment).setSortMethod(PeopleListFragment.SORT_METHOD_LEVEL);
+        else if (id == R.id.sort_last_contact)
+            ((PeopleListFragment) peopleListFragment).setSortMethod(PeopleListFragment.SORT_METHOD_LAST_CONTACT);
 
         return true;
     }
