@@ -9,15 +9,15 @@
     >
 
 
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    tools:context="cdoepp.hitemup.PersonDetailsActivity"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        tools:context="cdoepp.hitemup.PersonDetailsActivity"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
 
-    android:layout_height="match_parent"
-    android:layout_width="match_parent"
-    >
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        >
 
         <android.support.v7.widget.CardView
             android:id="@+id/info_card"
@@ -100,6 +100,7 @@
                     app:layout_constraintTop_toBottomOf="@id/name"
                     />
 
+                <!--
                 <Button
                     android:id="@+id/message_button"
                     android:layout_width="wrap_content"
@@ -112,20 +113,9 @@
                     android:textColor="@color/blue"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/contact_badge" />
+                    -->
 
-                <Button
-                    android:id="@+id/call_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="0dp"
-                    android:layout_marginStart="0dp"
-                    android:layout_marginTop="8dp"
-                    android:text="Call"
-                    style="?android:attr/borderlessButtonStyle"
-                    android:textColor="@color/blue"
-                    app:layout_constraintStart_toEndOf="@id/message_button"
-                    app:layout_constraintTop_toBottomOf="@+id/contact_badge" />
-
+                <!--
                 <View
                     android:id="@+id/divider8"
                     android:layout_width="match_parent"
@@ -138,25 +128,76 @@
                     android:layout_marginLeft="12dp"
 
                     app:layout_constraintTop_toBottomOf="@id/message_button"/>
+                    -->
 
-                <!--
-                <ImageButton
-                    android:id="@+id/imageButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginBottom="8dp"
+                <LinearLayout
+                    android:id="@+id/call_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginBottom="4dp"
+                    android:layout_marginStart="24dp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:onClick="onCallButtonClicked"
+                    android:orientation="vertical"
+                    android:padding="10dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/divider8"
-                    app:srcCompat="@drawable/ic_message_24dp"
+                    app:layout_constraintTop_toBottomOf="@id/contact_badge">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/ic_call"
+                        android:textSize="20dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="Call"
+                        android:textAlignment="center"
+                        android:textColor="@color/ytw_dark_blue"
+                        android:textSize="16dp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+
+                <LinearLayout
+                    android:id="@+id/message_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:orientation="vertical"
+                    android:padding="10dp"
+                    app:layout_constraintStart_toEndOf="@id/call_button"
+                    app:layout_constraintTop_toBottomOf="@id/contact_badge"
                     android:background="?android:attr/selectableItemBackground"
+                    android:onClick="onMessageButtonClicked"
+                    >
 
-                    />
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="@drawable/ic_message_blue_24dp"
+                        android:textSize="20dp"
+                        android:layout_gravity="center"
+                        />
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAlignment="center"
+                        android:text="Text"
+                        android:textColor="@color/ytw_dark_blue"
+                        android:textSize="16dp"
+                        android:textStyle="bold"
+                        android:layout_gravity="center"
+                        />
 
-                    -->
+                </LinearLayout>
 
             </android.support.constraint.ConstraintLayout>
         </android.support.v7.widget.CardView>
@@ -242,96 +283,94 @@
         </android.support.v7.widget.CardView>
 
 
-    <android.support.v7.widget.CardView
-        android:id="@+id/history_card"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-
-        android:layout_marginTop="8dp"
-        app:layout_goneMarginBottom="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/status_card">
-
-        <android.support.constraint.ConstraintLayout
+        <android.support.v7.widget.CardView
+            android:id="@+id/history_card"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
 
-            >
+            android:layout_marginTop="8dp"
+            app:layout_goneMarginBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
 
-            <TextView
-                android:id="@+id/history_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="8dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="History"
-                android:textColor="@android:color/holo_green_dark"
-                android:textSize="16sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/status_card">
 
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <View
-                android:id="@+id/divider3"
+            <android.support.constraint.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="1dip"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"
-                android:layout_marginTop="8dp"
-                android:background="@android:color/darker_gray"
+                android:layout_height="match_parent"
 
-                app:layout_constraintTop_toBottomOf="@id/history_title" />
+                >
 
-            <!--
-                <ListView
+                <TextView
+                    android:id="@+id/history_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="History"
+                    android:textColor="@android:color/holo_green_dark"
+                    android:textSize="16sp"
+
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <View
+                    android:id="@+id/divider3"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dip"
+                    android:layout_marginLeft="4dp"
+                    android:layout_marginRight="4dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@android:color/darker_gray"
+
+                    app:layout_constraintTop_toBottomOf="@id/history_title" />
+
+                <!--
+                    <ListView
+                        android:id="@+id/history_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginEnd="8dp"
+                        tools:listitem="@layout/item_history"
+                        app:layout_constraintTop_toBottomOf="@id/divider3"
+
+                        />
+                    -->
+                <LinearLayout
                     android:id="@+id/history_list"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginEnd="8dp"
-                    tools:listitem="@layout/item_history"
+                    android:layout_marginEnd="0dp"
+                    android:layout_marginStart="0dp"
+                    android:orientation="vertical"
                     app:layout_constraintTop_toBottomOf="@id/divider3"
+                    tools:listitem="@layout/item_history" />
 
-                    />
-                -->
-            <LinearLayout
-                android:id="@+id/history_list"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_marginEnd="0dp"
-                android:layout_marginStart="0dp"
-                android:orientation="vertical"
-                app:layout_constraintTop_toBottomOf="@id/divider3"
-                tools:listitem="@layout/item_history" />
-
-            <TextView
-                android:id="@+id/empty_history"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:layout_marginTop="8dp"
-                android:text="No History"
-                android:textColor="@color/gray"
-                android:textSize="16sp"
-                android:visibility="visible"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/divider3" />
+                <TextView
+                    android:id="@+id/empty_history"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginTop="8dp"
+                    android:text="No History"
+                    android:textColor="@color/gray"
+                    android:textSize="16sp"
+                    android:visibility="visible"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/divider3" />
 
 
-        </android.support.constraint.ConstraintLayout>
+            </android.support.constraint.ConstraintLayout>
 
-    </android.support.v7.widget.CardView>
-
-
+        </android.support.v7.widget.CardView>
 
     </android.support.constraint.ConstraintLayout>
 

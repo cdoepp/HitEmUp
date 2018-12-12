@@ -132,15 +132,12 @@ public class PersonDetailsActivity extends AppCompatActivity implements
             tvTimestamp.setText(message.getDate().toString());
             history.addView(messageView);
 
-
-            if (i < messages.size() - 1 && i <
-    2) {
-        View dividerView = getLayoutInflater().inflate(R.layout.item_list_divider, null);
-        history.addView(dividerView);
-    }
-
-    i++;
-}
+            if (i < messages.size() - 1 && i < 2) {
+                View dividerView = getLayoutInflater().inflate(R.layout.item_list_divider, null);
+                history.addView(dividerView);
+            }
+            i++;
+        }
     }
 
     @Override
@@ -215,6 +212,14 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         });
         AlertDialog alertDialog = d.create();
         alertDialog.show();
+    }
+
+    public void onCallButtonClicked(View v) {
+        Log.d(TAG, "CALL BUTTON CLICKED");
+    }
+
+    public void onMessageButtonClicked(View v) {
+        Log.d(TAG, "TEXT BUTTON CLICKED");
     }
 
     @Override
