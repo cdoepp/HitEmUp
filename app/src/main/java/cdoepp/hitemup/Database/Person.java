@@ -8,9 +8,12 @@ import android.arch.persistence.room.TypeConverters;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import cdoepp.hitemup.Message;
+import cdoepp.hitemup.PeopleListFragment;
 
 /**
  * Created by cdoepp on 7/29/18.
@@ -80,10 +83,24 @@ public class Person implements Serializable {
     }
 
     public void addMessage(Message message) {
-        messages.add(message);
+        if (messages == null) {
+            messages = new ArrayList<Message>();
+        }
+        boolean duplicate = false;
+        for (Message m : messages) {
+            if (m.getId().equals(message.getId()))
+                duplicate = true;
+        }
+        if (!duplicate)
+            messages.add(message);
+        Collections.sort(messages, PeopleListFragment.SORT_BY_DATE);
     }
 
     public void setMessages(ArrayList<Message> messages) {
-        this.messages = messages;
+        if (messages != null) {
+            this.messages = messages;
+            Collections.sort(messages, PeopleListFragment.SORT_BY_DATE);
+        }
     }
+
 }

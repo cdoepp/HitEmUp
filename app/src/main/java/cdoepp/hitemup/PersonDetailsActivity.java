@@ -36,6 +36,9 @@ import android.support.v4.content.Loader;
 import android.support.v4.widget.CursorAdapter;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import cdoepp.hitemup.Database.AppDatabase;
@@ -62,7 +65,14 @@ public class PersonDetailsActivity extends AppCompatActivity implements
     private HistoryListAdapter historyListAdapter;
     private LinearLayout history;
     private TextView emptyHistory;
+    private List<Message> messagesHistoryList;
+    private static String phoneNumber;
 
+    private Comparator<Message> SORT_BY_DATE = new Comparator<Message>() {
+        public int compare(Message m1, Message m2) {
+            return Long.compare(m2.getTimestamp(), m1.getTimestamp());
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,7 +88,7 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         person = (Person) intent.getSerializableExtra(MainActivity.PERSON);
         if (person == null) finish();
 
-        Log.d(TAG, "THIS PERSON's MESSAGES = " + person.getMessages().toString());
+        if (person.getMessages() != null)
 
         contactBadge = findViewById(R.id.contact_badge);
         tvName = findViewById(R.id.name);
@@ -93,7 +103,12 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         history = findViewById(R.id.history_list);
         emptyHistory = findViewById(R.id.empty_history);
 
-        insertRecentMessages(person.getMessages());
+        messagesHistoryList = new ArrayList<Message>();
+        phoneNumber = person.getPhoneNumber();
+
+        if (person.getMessages() != null)
+            insertRecentMessages(person.getMessages());
+
     }
 
     public void insertRecentMessages(List<Message> messages) {
@@ -102,17 +117,27 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         ImageView iconSent;
         ImageView iconReceived;
 
+        Log.d(TAG, "THIS PERSON's MESSAGES = " + person.getMessages().toString());
+
         if (messages.size() != 0)
             emptyHistory.setVisibility(View.GONE);
+
+        //Sorting the list of messages:
+        Collections.sort(messages, SORT_BY_DATE);
 
         int i = 0;
         while (i < 3 && i < messages.size()) {
             Message message = messages.get(i);
             View messageView = getLayoutInflater().inflate(R.layout.item_history, null);
+            messageView.setTag(message.getId());
             messageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Log.d(TAG, "MESSAGE VIEW CLICKED");
+                    Log.d(TAG, "MESSAGE VIEW CLICKED, id = " + v.getTag());
+                    Intent smsIntent = new Intent(android.content.Intent.ACTION_VIEW);
+                    smsIntent.setType("vnd.android-dir/mms-sms");
+                    smsIntent.putExtra("address", (String) v.getTag());
+                    startActivity(smsIntent);
                 }
             });
 
@@ -136,6 +161,7 @@ public class PersonDetailsActivity extends AppCompatActivity implements
                 View dividerView = getLayoutInflater().inflate(R.layout.item_list_divider, null);
                 history.addView(dividerView);
             }
+            messagesHistoryList.add(message);
             i++;
         }
     }
@@ -157,9 +183,10 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         person.setPhoneNumber(c.getString(c.getColumnIndex(Phone.NUMBER)));
         person.setPhoto(c.getString(c.getColumnIndexOrThrow(Contacts.PHOTO_THUMBNAIL_URI)));
 
-
         getSupportActionBar().setTitle(person.getName());
 
+        Log.d(TAG, "phone number = " + person.getPhoneNumber());
+        contactBadge = findViewById(R.id.contact_badge);
         contactBadge.assignContactFromPhone(person.getPhoneNumber(), true);
         contactBadge.setImageURI(null);
         if (person.getPhoto() != null) {
@@ -174,9 +201,11 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         tvLevel.setText("Priority level = " + person.getLevel());
 
         }
-@Override
+
+    @Override
     public void onClick(View v) {
-        if (v.getId() == findViewById(R.id.edit_status).getId()) Log.d(TAG, "EDIT STATUS");
+        if (v.getId() == findViewById(R.id.edit_status).getId())
+            Log.d(TAG, "EDIT STATUS");
         // Show numberpicker dialog:
         final  AlertDialog.Builder d = new AlertDialog.Builder(this);
         LayoutInflater inflater = this.getLayoutInflater();
@@ -189,12 +218,6 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         numberPicker.setMaxValue(10);
         numberPicker.setMinValue(0);
         numberPicker.setValue(person.getLevel());
-        numberPicker.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
-            @Override
-            public void onValueChange(NumberPicker numberPicker, int i, int i1) {
-                Log.d(TAG, "onValueChange: ");
-            }
-        });
         d.setPositiveButton("Done", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -202,7 +225,6 @@ public class PersonDetailsActivity extends AppCompatActivity implements
                 person.setLevel(numberPicker.getValue());
                 tvLevel.setText("Priority level = " + numberPicker.getValue());
                 new updateContactTask().execute(person);
-
             }
         });
         d.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -220,6 +242,11 @@ public class PersonDetailsActivity extends AppCompatActivity implements
 
     public void onMessageButtonClicked(View v) {
         Log.d(TAG, "TEXT BUTTON CLICKED");
+        //Intent androidSix = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", phoneNumber, null));
+        //startActivity(androidSix);
+        //Intent smsIntent = new Intent(android.content.Intent.ACTION_VIEW, Uri.parse("mms:" + "15404461277;17032312766"));
+        Intent smsIntent = new Intent(android.content.Intent.ACTION_VIEW, Uri.parse("mms:" + person.getPhoneNumber()));
+        startActivity(smsIntent);
     }
 
     @Override
@@ -252,8 +279,6 @@ public class PersonDetailsActivity extends AppCompatActivity implements
         finish();
     }
 
-
-
     public class addContactTask extends AsyncTask<Person, Void, Void> {
         @Override
         protected Void doInBackground(Person... people) {
@@ -262,6 +287,7 @@ public class PersonDetailsActivity extends AppCompatActivity implements
                     .addMigrations(AppDatabase.MIGRATION_1_2)
                     .build();
             db.peopleDao().insertAll(people);
+            db.close();
             Log.d(TAG, "inserting person = " + people[0].getName());
             return null;
         }
@@ -281,6 +307,7 @@ public class PersonDetailsActivity extends AppCompatActivity implements
                     .addMigrations(AppDatabase.MIGRATION_1_2)
                     .build();
             db.peopleDao().update(person[0]);
+            db.close();
             Log.d(TAG, "updating person = " + person[0].getName());
             return null;
         }

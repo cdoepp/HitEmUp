@@ -18,7 +18,6 @@ import cdoepp.hitemup.Message;
 public class Converters {
     @TypeConverter
     public static ArrayList<Message> fromString(String value) {
-        Log.d("CONVERTERS", "value = " + value);
         Type listType = new TypeToken<ArrayList<Message>>() {}.getType();
         return new Gson().fromJson(value, listType);
     }

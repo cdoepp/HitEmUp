@@ -47,7 +47,7 @@ public class PeopleListAdapter extends ArrayAdapter<Person> {
         if (convertView == null) {
             convertView = mInflater.inflate(R.layout.item_person, null);
             holder = new ViewHolder();
-            holder.name = (TextView)convertView.findViewById(R.id.name);
+            holder.name = convertView.findViewById(R.id.name);
             holder.photo = convertView.findViewById(R.id.photo);
             holder.level = convertView.findViewById(R.id.level);
             holder.details = convertView.findViewById(R.id.details);
@@ -88,7 +88,7 @@ public class PeopleListAdapter extends ArrayAdapter<Person> {
                     holder.alertIcon.setVisibility(View.GONE);
                 }
 
-            } else if (messages != null && messages.size() == 0) {
+            } else {  //No contact records with this person:
                 holder.details.setText("No contact records");
                 holder.details.setTextColor(ContextCompat.getColor(mContext, R.color.default_text));
                 holder.alertIcon.setVisibility(View.GONE);

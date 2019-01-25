@@ -71,6 +71,8 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
     public static final int SORT_METHOD_NAME = 0;
     public static final int SORT_METHOD_LEVEL = 1;
     public static final int SORT_METHOD_LAST_CONTACT = 2;
+    public static final String HIGHEST_SMS_ID = "highest_sms_id";
+    public static final String HIGHEST_MMS_ID = "highest_mms_id";
 
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
@@ -119,15 +121,21 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
 
     private long mLastClickTime = 0;
 
+    public static Comparator<Message> SORT_BY_DATE = new Comparator<Message>() {
+        public int compare(Message m1, Message m2) {
+            return Long.compare(m2.getTimestamp(), m1.getTimestamp());
+        }
+    };
+
     //Sorting the list of contacts:
-    private Comparator<Person> SORT_BY_NAME = new Comparator<Person>() {
+    private static Comparator<Person> SORT_BY_NAME = new Comparator<Person>() {
         public int compare(Person p1, Person p2) {
             int res = String.CASE_INSENSITIVE_ORDER.compare(p1.getName(), p2.getName());
             return res;
         }
     };
 
-    private Comparator<Person> SORT_BY_LEVEL = new Comparator<Person>() {
+    private static Comparator<Person> SORT_BY_LEVEL = new Comparator<Person>() {
         public int compare(Person p1, Person p2) {
             if (p1.getLevel() < p2.getLevel())
                 return 1;
@@ -161,7 +169,6 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
             }
         }
     };
-
 
     public PeopleListFragment() {
     }
@@ -243,6 +250,7 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
         peopleList.clear();
         for (Person person : people) peopleList.add(person);
 
+        /*
         //Check people database with phone's contacts:
         for (int i = 0; i < contactsCursor.getCount(); i++) {
 
@@ -283,12 +291,9 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
             }
             contactsCursor.moveToNext();
         }
+        */
         Log.d(TAG, "people list size = " + peopleList.size());
         sortListView();
-
-
-
-        //List<Message> messageList = getAllSMSAndMMS();
 
         mContactsList.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.INVISIBLE);
@@ -443,8 +448,14 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
                     AppDatabase.class, "database-name")
                     .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
                     .build();
-            //db.peopleDao().deleteById(200);
             List<Person> people = db.peopleDao().getAll();
+            for (Person person : people) {
+                List<Message> messages = person.getMessages();
+                if (messages != null) {
+                    Collections.sort(messages, SORT_BY_DATE);
+                    Log.d(TAG, "name = " + person.getName() + ", messages = " + messages);
+                }
+            }
 
             if (contactsCursor == null || people == null) return null;
             contactsCursor.moveToFirst();
@@ -467,6 +478,7 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
                     db.peopleDao().delete(person);
 
             }
+            db.close();
             contactsCursor.moveToFirst();
 
             //Check people database with phone's contacts:
@@ -501,7 +513,6 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
 
                 } else {
                     // Already in database, update parameters:
-                    Log.d(TAG, "Already in database");
                     int level = person.getLevel();
                     person.setName(name);
                     person.setPhoneNumber(phoneNumber);
@@ -511,11 +522,7 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
             }
             Log.d(TAG, "people list size = " + peopleList.size());
 
-
             // GET ALL TEXT MESSAGES:
-            //List<Message> messageList = getAllSMSAndMMS();
-            Log.d(TAG, "MMSSMS URI = " + MmsSms.CONTENT_FILTER_BYPHONE_URI);
-            Log.d(TAG, "MMSSMS URI = " + MmsSms.CONTENT_CONVERSATIONS_URI);
             List<Message> messageList = new ArrayList<Message>();
             Cursor c = getActivity().getContentResolver().query(
                     Uri.parse("content://mms-sms/complete-conversations/"),
@@ -523,23 +530,58 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
                     null, //Sms.Inbox.PERSON + " = 6",
                     null,
                     //Sms.Inbox.DATE); // Default sort order
-                    null, null);
+                    MmsSms._ID + " DESC", null);
 
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            SharedPreferences.Editor editor = preferences.edit();
+
+            long highestSms = preferences.getLong(HIGHEST_SMS_ID, 0);
+            long highestMms = preferences.getLong(HIGHEST_MMS_ID, 0);
+            Log.d(TAG, "highest sms = " + highestSms + ", mms = " + highestMms);
+
+            boolean doneSms = false;
+            boolean doneMms = false;
             Message msg = null;
-            if (c.moveToFirst()) {
+            if (c != null && c.moveToFirst()) {
+                long newHighestSms = -1;
+                long newHighestMms = -1;
                 do {
                     msg = null;
-                    Log.d(TAG, "type = " + c.getString(c.getColumnIndex(MmsSms.TYPE_DISCRIMINATOR_COLUMN))
-                            + ", id = " + c.getString(c.getColumnIndex(MmsSms._ID)));
+                    //Log.d(TAG, "type = " + c.getString(c.getColumnIndex(MmsSms.TYPE_DISCRIMINATOR_COLUMN)) + ", id = " + c.getString(c.getColumnIndex(MmsSms._ID)));
                     String id = c.getString(c.getColumnIndex(MmsSms._ID));
                     String type = c.getString(c.getColumnIndex(MmsSms.TYPE_DISCRIMINATOR_COLUMN));
-                    //Log.d(TAG, "date = " + c.getString(c.getColumnIndex(Mms.DATE)));
+                    Log.d(TAG, "type = " + type + ", id = " + id);
+
                     if (type.equals("sms")) {
-                        msg = getSmsDetails(id);
-                        if (msg != null) messageList.add(msg);
+                        if (Long.parseLong(id) > highestSms) {
+                            msg = getSmsDetails(id);
+                            if (msg != null) {
+                                if (newHighestSms == -1) {
+                                    newHighestSms = Long.parseLong(msg.getId());
+                                    editor.putLong(HIGHEST_SMS_ID, newHighestSms);
+                                    editor.apply();
+                                    Log.d(TAG, "NEW HIGHEST = " + newHighestSms);
+                                }
+                                messageList.add(msg);
+                            }
+                        } else {
+                            doneSms = true;
+                        }
                     } else if (type.equals("mms")) {
+                        if (Long.parseLong(id) > highestMms) {
                         msg = getMmsDetails(id);
-                        if (msg != null) messageList.add(msg);
+                        if (msg != null) {
+                            if (newHighestMms == -1) {
+                                newHighestMms = Long.parseLong(msg.getId());
+                                editor.putLong(HIGHEST_MMS_ID, newHighestMms);
+                                editor.apply();
+                            }
+                            messageList.add(msg);
+                                }
+                            } else {
+                            doneMms = true;
+                        }
+                        if (doneSms && doneMms) break;
                     }
                 } while (c.moveToNext());
             } else {
@@ -548,42 +590,28 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
             c.close();
 
             //Sort messages by date, newest first:
-            Comparator<Message> SORT_BY_DATE = new Comparator<Message>() {
-                public int compare(Message m1, Message m2) {
-                    return Long.compare(m2.getTimestamp(), m1.getTimestamp());
-                }
-            };
             Collections.sort(messageList, SORT_BY_DATE);
 
-
+            //Add all messages to/from this person
             for (int i = 0; i < peopleList.size(); i++) {
                 Person person = peopleList.get(i);
                 String contactAddress = person.getPhoneNumber();
-                ArrayList<Message> contactMessages = new ArrayList<Message>();
 
                 Iterator<Message> it = messageList.iterator();
                 while (it.hasNext()) {
                     Message message = it.next();
                     if (PhoneNumberUtils.compare(contactAddress, message.getAddress())) {
-                        contactMessages.add(message);
+                        Log.d(TAG, "Message = "+ message.getText() + " from: " + person.getName());
+                        person.addMessage(message);
                         it.remove();
                     }
                 }
-
-                /*
-                // OR: (maybe slower??)
-                for (Message message : messageList) {
-                    if (PhoneNumberUtils.compare(contactAddress, message.getAddress())) {
-                        contactMessages.add(message);
-                    }
-                }
-                */
-
-                person.setMessages(contactMessages);
-
             }
 
-
+            for (Person person : peopleList) {
+                Person[] people_temp = {person};
+                new updatePersonTask().execute(person);
+            }
 
             return people;
         }
@@ -593,19 +621,26 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
             Cursor cursor = getActivity().getContentResolver().query(Sms.CONTENT_URI, null, selection, null, null);
             cursor.moveToFirst();
             String address = cursor.getString(cursor.getColumnIndex(Sms.Inbox.ADDRESS));
+            address = address.replaceAll("\\) ", "");
             int type = cursor.getInt(cursor.getColumnIndex(Sms.Inbox.TYPE)); // 1 = received, 2 = sent
             long timestamp = cursor.getLong(cursor.getColumnIndex(Sms.DATE));
             Date date = new Date(timestamp);
             String text = cursor.getString(cursor.getColumnIndex(Sms.Inbox.BODY));
 
             if (cursor != null) cursor.close();
-            Log.d(TAG, "     address = " + address + ", type = " + type + ", date = " + date.toString() + ", text = " + text);
+
+            if (type == 1)
+                Log.d(TAG, "SMS message received from " + address + ": " + text + " at " + date.toString());
+            else if (type == 2)
+                Log.d(TAG, "SMS message sent to " + address + ": " + text + " at " + date.toString());
+
             // Checks if message was an sms group message sent to multiple people. We already have
             // an individual message for each recipient, so this one can be ignored
-            if (address.split(" ").length > 1) {    // SMS gr
+            if (address.split(" ").length > 1) {    // SMS group
                 Log.d(TAG, "SMS GROUP MESSAGE, MULTIPLE!!, address = " + address.split(" ")[0] + ", " + address.split(" ")[1]);
                 return null;
             }
+            address = PhoneNumberUtils.normalizeNumber(address);
             return new Message(id, type, address, date, text);
 
         }
@@ -614,16 +649,14 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
             Date date = getMmsDate(id);
             String selection = Mms.Part.MSG_ID + "=" + id;
             Uri uri = Uri.parse("content://mms/part");
-            Cursor cursor = getActivity().getContentResolver().query(uri, null, selection, null, null);
+            Cursor cursor = getActivity().getContentResolver().query(uri, new String[]{Mms.Part.CONTENT_TYPE, Mms.Part.TEXT}, selection, null, null);
+            //Log.d(TAG, "cursor size = " + cursor.getString(cursor.getColumnIndex(Mms.Part._COUNT)));
             Message message = null;
             if (cursor.moveToFirst()) {
                 do {
-                    String partId = cursor.getString(cursor.getColumnIndex(Mms._ID));
                     String type = cursor.getString(cursor.getColumnIndex(Mms.Part.CONTENT_TYPE));
                     if (type.equals("text/plain")) {
                         String text = cursor.getString(cursor.getColumnIndex(Mms.Part.TEXT));
-                        String charset = cursor.getString(cursor.getColumnIndex(Mms.Part.CHARSET));
-
                         String selectionAdd = new String(Mms.Addr.MSG_ID + "=" + id);
                         String uriStr = MessageFormat.format("content://mms/{0}/addr", id);
 
@@ -633,20 +666,33 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
                         String address = null;
 
                         Uri uriAddress = Uri.parse(uriStr);
-                        Cursor cAdd = getActivity().getContentResolver().query(uriAddress, null,
+                        Cursor cAdd = getActivity().getContentResolver().query(uriAddress, new String[]{Mms.Addr.ADDRESS},
                                 selectionAdd, null, null);
                         if (cAdd.moveToFirst()) {
                             address = cAdd.getString(cAdd.getColumnIndex(Mms.Addr.ADDRESS));
-                            if (PhoneNumberUtils.compare(MY_PHONE_NUMBER, address)) //if first one, it's our own message
+                            if (PhoneNumberUtils.compare(MY_PHONE_NUMBER, address)) {//if first one, it's our own message
                                 type2 = Message.TYPE_SENT;
-                            else
+                                Log.d(TAG, "MMS message sent to " + address + ": " + text + " at " + date.toString());
+                            }
+                            else {
                                 type2 = Message.TYPE_RECEIVED;
+                                Log.d(TAG, "MMS message received from " + address + ": " + text + " at " + date.toString());
+                            }
+                        }
+                        List<String> otherAddresses;
+                        String otherAddress;
+                        if (cAdd.getCount() > 2) {
+                            otherAddresses = new ArrayList<String>();
+                            while (cAdd.moveToNext()) {
+                                otherAddress = cAdd.getString(cAdd.getColumnIndex(Mms.Addr.ADDRESS));
+                                if (!PhoneNumberUtils.compare(MY_PHONE_NUMBER, otherAddress))
+                                    otherAddresses.add(otherAddress);
+                            }
+                            Log.d(TAG, "other addresses = " + otherAddresses);
                         }
                         if (cAdd != null)
                             cAdd.close();
 
-                        Log.d(TAG, "     partid = " + partId + ", type = " + type + ", date = " + date.toString() + ", type2 = " + type2
-                                + ", charset = " + charset + ", text = " + text + ", address = " + address);
 
                         message = new Message(id, type2, address, date, text);
                     }
@@ -677,7 +723,6 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
             return date;
         }
 
-
         @Override
         protected void onPostExecute(List<Person> people) {
             delegate.processFinish(people);
@@ -688,12 +733,13 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
     public class addContactTask extends AsyncTask<Person, Void, Void> {
         @Override
         protected Void doInBackground(Person... people) {
+            Log.d(TAG, "insert person = " + people[0].getName() + ", id = " + people[0].getId());
             AppDatabase db = Room.databaseBuilder(getContext(),
                     AppDatabase.class, "database-name")
                     .addMigrations(AppDatabase.MIGRATION_1_2)
                     .build();
             db.peopleDao().insertAll(people);
-            Log.d(TAG, "insert person = " + people[0].getName());
+            db.close();
             return null;
         }
 
@@ -701,6 +747,27 @@ public class PeopleListFragment extends Fragment implements LoaderManager.Loader
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             Log.d(TAG, "inserted contact to room database");
+        }
+    }
+
+    public class updatePersonTask extends AsyncTask<Person, Void, Void> {
+        @Override
+        protected Void doInBackground(Person... people) {
+            Person person = people[0];
+            Log.d(TAG, "update person = " + person.getName() + ", id = " + person.getId());
+            AppDatabase db = Room.databaseBuilder(getContext(),
+                    AppDatabase.class, "database-name")
+                    .addMigrations(AppDatabase.MIGRATION_1_2)
+                    .build();
+            db.peopleDao().update(person);
+            db.close();
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            Log.d(TAG, "updated person");
         }
     }
 }

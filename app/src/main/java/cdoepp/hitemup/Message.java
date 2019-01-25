@@ -87,9 +87,9 @@ public class Message implements Serializable {
 
     public String toString() {
         if (type == Message.TYPE_RECEIVED)
-            return "Message received from " + address + ": " + text + ", at " + date.toString();
+            return "Message received from " + address + ": " + text + ", at " + date.toString() + ", id = " + id;
         else
-            return "Message sent to " + address + ": " + text + ", at " + date.toString();
+            return "Message sent to " + address + ": " + text + ", at " + date.toString() + ", id = " + id;
     }
 
 }
